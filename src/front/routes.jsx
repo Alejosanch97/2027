@@ -1,30 +1,50 @@
-// Import necessary components and functions from react-router-dom.
-
-import {
-    createBrowserRouter,
-    createRoutesFromElements,
-    Route,
-} from "react-router-dom";
+import { createBrowserRouter, createRoutesFromElements, Route, Link } from "react-router-dom";
 import { Layout } from "./pages/Layout";
+import { Login } from "./pages/Login";
 import { Home } from "./pages/Home";
-import { Single } from "./pages/Single";
-import { Demo } from "./pages/Demo";
+import { Plan } from "./pages/Plan";
+import { Habits } from "./pages/Habits";
+import { Body } from "./pages/Body";
+import { Focus } from "./pages/Focus";
+import { Breathe } from "./pages/Breathe";
+import { Journal } from "./pages/Journal";
+import { Finance } from "./pages/Finance";
+import { Apartment } from "./pages/Apartment";
+import { Vision } from "./pages/Vision";
+import { Loot } from "./pages/Loot";
+import { Copilot } from "./pages/Copilot";
+import { Profile } from "./pages/Profile";
+import { Premiere } from "./pages/Premiere";
+
+const NotFound = () => (
+  <div className="loader"><p>Este sendero no existe.</p><Link className="btn primary" to="/">Volver a la base</Link></div>
+);
 
 export const router = createBrowserRouter(
-    createRoutesFromElements(
-    // CreateRoutesFromElements function allows you to build route elements declaratively.
-    // Create your routes here, if you want to keep the Navbar and Footer in all views, add your new routes inside the containing Route.
-    // Root, on the contrary, create a sister Route, if you have doubts, try it!
-    // Note: keep in mind that errorElement will be the default page when you don't get a route, customize that page to make your project more attractive.
-    // Note: The child paths of the Layout element replace the Outlet component with the elements contained in the "element" attribute of these child paths.
+  createRoutesFromElements(
+    <>
+      {/* Pantallas completas, fuera del marco de la app */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/estreno" element={<Premiere />} />
 
-      // Root Route: All navigation will start from here.
-      <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
-
-        {/* Nested Routes: Defines sub-routes within the BaseHome component. */}
-        <Route path= "/" element={<Home />} />
-        <Route path="/single/:theId" element={ <Single />} />  {/* Dynamic route for single items */}
-        <Route path="/demo" element={<Demo />} />
+      {/* Todo lo demás vive dentro del Layout (barra lateral + HUD) */}
+      <Route path="/" element={<Layout />} errorElement={<NotFound />}>
+        <Route index element={<Home />} />
+        <Route path="plan" element={<Plan />} />
+        <Route path="vision" element={<Vision />} />
+        <Route path="habitos" element={<Habits />} />
+        <Route path="cuerpo" element={<Body />} />
+        <Route path="enfoque" element={<Focus />} />
+        <Route path="respira" element={<Breathe />} />
+        <Route path="bitacora" element={<Journal />} />
+        <Route path="finanzas" element={<Finance />} />
+        <Route path="apartamento" element={<Apartment />} />
+        <Route path="botin" element={<Loot />} />
+        <Route path="copiloto" element={<Copilot />} />
+        <Route path="perfil" element={<Profile />} />
+        <Route path="*" element={<NotFound />} />
       </Route>
-    )
+    </>
+  ),
+  { basename: import.meta.env.VITE_BASENAME || "/" }
 );

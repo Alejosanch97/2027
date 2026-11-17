@@ -5,11 +5,15 @@ import os
 from flask import Flask, request, jsonify, url_for, send_from_directory
 from flask_migrate import Migrate
 from flask_swagger import swagger
+from flask_jwt_extended import JWTManager
+from datetime import timedelta
+from sqlalchemy import inspect as sa_inspect
 from api.utils import APIException, generate_sitemap
 from api.models import db
 from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
+from api.seed import ensure_seed
 
 # from models import Person
 
@@ -25,20 +29,47 @@ if db_url is not None:
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace(
         "postgres://", "postgresql://")
 else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////tmp/test.db"
+    # Sin DATABASE_URL se usa un archivo SQLite local (cumbre27.db en la raíz del proyecto)
+    sqlite_path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'cumbre27.db'))
+    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + sqlite_path.replace("\\", "/")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-MIGRATE = Migrate(app, db, compare_type=True)
+MIGRATE = Migrate(app, db, compare_type=True, render_as_batch=True)
 db.init_app(app)
 
+# JWT: sesiones de 30 días
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY") or os.getenv("FLASK_APP_KEY", "cambia-esta-clave")
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=30)
+jwt = JWTManager(app)
+
+
+@jwt.unauthorized_loader
+@jwt.invalid_token_loader
+def jwt_missing(reason):
+    return jsonify({"message": "Inicia sesión para continuar"}), 401
+
+
+@jwt.expired_token_loader
+def jwt_expired(header, payload):
+    return jsonify({"message": "Tu sesión venció, entra de nuevo"}), 401
+
 # add the admin
-setup_admin(app)
+if ENV == "development":
+    setup_admin(app)
 
 # add the admin
 setup_commands(app)
 
 # Add all endpoints form the API with a "api" prefix
 app.register_blueprint(api, url_prefix='/api')
+
+# Si las tablas ya existen (después de `pipenv run upgrade`) y no hay usuarios, se crea 1ALE con su plan
+with app.app_context():
+    try:
+        if sa_inspect(db.engine).has_table("users") and ensure_seed():
+            print(" * Cumbre 27: usuario 1ALE creado con el Plan Maestro 2027")
+    except Exception as error:  # la base aún no está lista
+        print(" * Cumbre 27: semilla pendiente ->", error)
 
 # Handle/serialize errors like a JSON object
 
